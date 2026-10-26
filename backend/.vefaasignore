@@ -1,0 +1,13 @@
+.venv/
+.env
+.env.*
+.vefaas/
+/data/
+tests/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+.coverage

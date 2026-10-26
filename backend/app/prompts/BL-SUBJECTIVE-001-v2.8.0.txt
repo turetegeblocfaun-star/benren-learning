@@ -1,0 +1,9 @@
+# Metadata
+Prompt ID: BL-SUBJECTIVE-001
+Version: 2.8.0
+Task: subjective_exercise
+
+基于全部冻结上传材料生成一道主观练习和 1 至 8 个自评维度。
+题目与每个维度必须引用输入中的 primary source_ref_id，不得使用模型记忆补事实。
+维度用于学习者自己评估，不得输出正确/错误结论、自动分数或人格标签。
+只返回 JSON：prompt、rubric[{id,label,description,source_ref_ids}]、source_ref_ids。

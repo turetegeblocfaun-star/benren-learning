@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>第一阶段后端验收台</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17352d;
+        --muted: #63716c;
+        --paper: #f5f0e5;
+        --card: #fffdf8;
+        --line: #d9d0bf;
+        --green: #1f6b53;
+        --green-soft: #e6f2ec;
+        --brass: #a97422;
+        --red: #a53c32;
+        --red-soft: #f9e8e4;
+        --blue-soft: #e8f0f7;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 0%, rgba(169,116,34,.11), transparent 27rem),
+          linear-gradient(180deg, #f9f6ee 0%, var(--paper) 100%);
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      button, input, textarea { font: inherit; }
+      button { cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: .55; }
+      .shell { width: min(1100px, calc(100% - 28px)); margin: 0 auto; padding: 32px 0 72px; }
+      .hero {
+        border: 1px solid rgba(31,107,83,.22);
+        border-radius: 24px;
+        padding: 28px;
+        background: rgba(255,253,248,.91);
+        box-shadow: 0 18px 50px rgba(38,52,46,.09);
+      }
+      .eyebrow { margin: 0 0 8px; color: var(--brass); font-weight: 800; letter-spacing: .08em; }
+      h1 { margin: 0; font-size: clamp(30px, 6vw, 52px); line-height: 1.05; }
+      h2 { margin: 0 0 8px; font-size: 22px; }
+      h3 { margin: 0; font-size: 17px; }
+      p { line-height: 1.65; }
+      .lead { max-width: 780px; color: var(--muted); margin: 14px 0 0; }
+      .notice {
+        display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; padding: 14px 16px;
+        border-radius: 14px; background: var(--blue-soft); color: #294d68;
+      }
+      .notice strong { white-space: nowrap; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+      .card {
+        border: 1px solid var(--line); border-radius: 20px; padding: 22px;
+        background: var(--card); box-shadow: 0 10px 28px rgba(38,52,46,.06);
+      }
+      .wide { grid-column: 1 / -1; }
+      .step { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+      .step-number {
+        width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px;
+        background: var(--ink); color: white; font-weight: 800;
+      }
+      .field { display: grid; gap: 7px; margin-top: 14px; }
+      label { font-weight: 750; }
+      input[type="text"], input[type="password"], textarea, input[type="file"] {
+        width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+        background: white; color: var(--ink);
+      }
+      textarea { min-height: 96px; resize: vertical; }
+      .button-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+      .button {
+        border: 1px solid transparent; border-radius: 12px; padding: 10px 15px; font-weight: 800;
+      }
+      .primary { background: var(--green); color: white; }
+      .secondary { background: white; border-color: var(--line); color: var(--ink); }
+      .danger { background: white; border-color: #d99189; color: var(--red); }
+      .status-line {
+        min-height: 24px; margin-top: 12px; color: var(--muted); font-size: 14px;
+      }
+      .status-line.error { color: var(--red); }
+      .status-line.success { color: var(--green); }
+      .material-list { display: grid; gap: 12px; margin-top: 16px; }
+      .material {
+        border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: white;
+      }
+      .material-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+      .material-name { overflow-wrap: anywhere; }
+      .meta { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+      .badge {
+        display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px;
+        font-size: 12px; font-weight: 850; white-space: nowrap; background: #ede8dc;
+      }
+      .badge.usable, .badge.completed { color: var(--green); background: var(--green-soft); }
+      .badge.needs_review, .badge.partial { color: #76500e; background: #fff1c9; }
+      .badge.failed, .badge.deleted { color: var(--red); background: var(--red-soft); }
+      .badge.extracting, .badge.processing, .badge.deleting { color: #294d68; background: var(--blue-soft); }
+      .details { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+      .details.open { display: block; }
+      .segment { padding: 10px 0; border-bottom: 1px solid #eee8dd; }
+      .segment:last-child { border-bottom: 0; }
+      .segment p { margin: 4px 0; }
+      .review { color: #76500e; font-weight: 800; }
+      .media { width: 100%; max-height: 360px; object-fit: contain; margin-top: 12px; border-radius: 12px; background: #f3f1eb; }
+      .candidate { border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 10px; }
+      .candidate-title { font-weight: 850; font-size: 18px; }
+      .source-list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+      .source-list li { padding: 10px 12px; border-radius: 10px; background: #f3f1eb; }
+      .checks { display: grid; gap: 10px; margin-top: 16px; }
+      .check { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); }
+      .check::before { content: "○"; font-size: 18px; line-height: 1.2; }
+      .check.pass { color: var(--green); font-weight: 750; }
+      .check.pass::before { content: "✓"; }
+      .check.fail { color: var(--red); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+      .hidden { display: none !important; }
+      .footer { color: var(--muted); text-align: center; margin-top: 28px; font-size: 13px; }
+      @media (max-width: 760px) {
+        .shell { width: min(100% - 18px, 1100px); padding-top: 12px; }
+        .hero, .card { padding: 18px; border-radius: 16px; }
+        .grid { grid-template-columns: 1fr; }
+        .wide { grid-column: auto; }
+        .material-head { flex-direction: column; }
+        .button { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">STAGE 1 · BACKEND ACCEPTANCE</p>
+        <h1>第一阶段后端验收台</h1>
+        <p class="lead">这里不是正式产品前端，而是一张临时验收工作台。你在这里完成的每一步都直接调用第一阶段真实后端。</p>
+        <div class="notice"><strong>验收原则</strong><span>看得见上传、解析、校正、删除、课程命名、上下文与来源，才算后端功能可验证。</span></div>
+      </section>
+
+      <div class="grid">
+        <section class="card">
+          <div class="step"><span class="step-number">1</span><div><h2>进入验收空间</h2><div class="meta">使用本地测试邀请码建立安全会话</div></div></div>
+          <div class="field"><label for="inviteCode">邀请码</label><input id="inviteCode" type="password" autocomplete="off" placeholder="请输入测试邀请码" /></div>
+          <div class="button-row"><button id="loginButton" class="button primary" type="button">进入第一阶段验收</button></div>
+          <div id="loginStatus" class="status-line">尚未登录</div>
+        </section>
+
+        <section class="card">
+          <div class="step"><span class="step-number">✓</span><div><h2>自动验收记录</h2><div class="meta">每完成一项，这里会自动打勾</div></div></div>
+          <div class="checks">
+            <div id="checkHealth" class="check">API、数据库与 Worker 正常</div>
+            <div id="checkLogin" class="check">邀请码会话和个人课程正常</div>
+            <div id="checkUpload" class="check">材料上传并产生可恢复任务</div>
+            <div id="checkMaterial" class="check">材料解析或待人工确认状态清楚</div>
+            <div id="checkTitle" class="check">课程名称候选与用户确认正常</div>
+            <div id="checkContext" class="check">direct_full 快照与来源回跳正常</div>
+          </div>
+        </section>
+
+        <section id="uploadCard" class="card wide hidden">
+          <div class="step"><span class="step-number">2</span><div><h2>上传真实材料</h2><div class="meta">可单独上传，也可以同时选择多种材料</div></div></div>
+          <div class="grid">
+            <div class="field"><label for="audioFiles">课堂音频</label><input id="audioFiles" type="file" accept=".mp3,.m4a,.wav,audio/*" multiple /></div>
+            <div class="field"><label for="textFiles">文本或既有转写</label><input id="textFiles" type="file" accept=".txt,.md,.docx,.pdf" multiple /></div>
+            <div class="field"><label for="boardFiles">板书图片</label><input id="boardFiles" type="file" accept=".jpg,.jpeg,.png,.webp,image/*" multiple /></div>
+            <div class="field"><label for="handwritingFiles">手写笔记图片</label><input id="handwritingFiles" type="file" accept=".jpg,.jpeg,.png,.webp,image/*" multiple /></div>
+          </div>
+          <div class="field"><label for="pastedText">或者直接粘贴一段文字</label><textarea id="pastedText" placeholder="例如：第一章 光合作用……"></textarea></div>
+          <div class="button-row">
+            <button id="uploadButton" class="button primary" type="button">上传并开始解析</button>
+            <button id="refreshButton" class="button secondary" type="button">刷新材料状态</button>
+          </div>
+          <div id="uploadStatus" class="status-line">请选择至少一份材料或粘贴文字。</div>
+        </section>
+
+        <section id="materialsCard" class="card wide hidden">
+          <div class="step"><span class="step-number">3</span><div><h2>检查解析结果</h2><div class="meta">可查看来源位置、接受待确认内容、重试或删除</div></div></div>
+          <div id="materialsEmpty" class="status-line">当前还没有材料。</div>
+          <div id="materialList" class="material-list"></div>
+        </section>
+
+        <section id="titleCard" class="card hidden">
+          <div class="step"><span class="step-number">4</span><div><h2>验证课程名称</h2><div class="meta">模型只提供候选，必须由你确认</div></div></div>
+          <div class="button-row"><button id="loadTitleButton" class="button secondary" type="button">读取名称候选</button></div>
+          <div id="titleStatus" class="status-line">至少一份材料可用后才能生成。</div>
+          <div id="candidateList"></div>
+        </section>
+
+        <section id="contextCard" class="card hidden">
+          <div class="step"><span class="step-number">5</span><div><h2>验证上下文与来源</h2><div class="meta">使用全部可用材料，不做隐藏检索或筛选</div></div></div>
+          <div class="button-row"><button id="contextButton" class="button primary" type="button">用全部可用材料创建快照</button></div>
+          <div id="contextStatus" class="status-line">尚未创建上下文快照。</div>
+          <ul id="sourceList" class="source-list"></ul>
+        </section>
+      </div>
+
+      <p class="footer">仅用于第一阶段后端本地验收 · 不属于正式产品前端 · 不会触发第二阶段开发</p>
+    </main>
+
+    <script>
+      const state = { course: null, materials: [], batchId: null, poller: null };
+      const terminalBatch = new Set(["completed", "partial", "failed"]);
+      const terminalMaterial = new Set(["usable", "needs_review", "partial", "failed", "deleted"]);
+      const statusNames = {
+        pending: "等待处理", uploading: "上传中", extracting: "解析中", usable: "可用",
+        needs_review: "需要人工确认", partial: "部分可用", failed: "失败",
+        deleting: "删除中", deleted: "已删除", processing: "处理中", completed: "已完成"
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+      })[char]);
+      const randomKey = (prefix) => `${prefix}-${crypto.randomUUID()}`;
+      const setStatus = (id, text, kind = "") => {
+        const element = $(id); element.textContent = text; element.className = `status-line ${kind}`.trim();
+      };
+      const pass = (id, value = true) => $(id).classList.toggle("pass", Boolean(value));
+      const show = (id) => $(id).classList.remove("hidden");
+
+      async function api(path, options = {}) {
+        const headers = { ...(options.headers || {}) };
+        if (options.body && !(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
+        const response = await fetch(path, { credentials: "same-origin", ...options, headers });
+        const contentType = response.headers.get("content-type") || "";
+        const body = contentType.includes("application/json") ? await response.json() : await response.text();
+        if (!response.ok) {
+          const error = body?.error || {};
+          const failure = new Error(error.message || `请求失败（${response.status}）`);
+          failure.code = error.code || `HTTP_${response.status}`;
+          throw failure;
+        }
+        return body;
+      }
+
+      async function checkHealth() {
+        try {
+          const health = await api("/api/v1/health");
+          pass("checkHealth", health.api === "ok" && health.database === "ok" && health.worker === "ok");
+        } catch (_) { pass("checkHealth", false); }
+      }
+
+      async function login() {
+        const code = $("inviteCode").value.trim();
+        if (!code) return setStatus("loginStatus", "请输入邀请码。", "error");
+        $("loginButton").disabled = true;
+        setStatus("loginStatus", "正在建立验收会话……");
+        try {
+          await api("/api/v1/auth/invite-session", { method: "POST", body: JSON.stringify({ invite_code: code }) });
+          state.course = await api("/api/v1/courses", {
+            method: "POST", body: "{}", headers: { "Idempotency-Key": "stage1-backend-check-course-v1" }
+          });
+          setStatus("loginStatus", "已进入个人验收空间。", "success");
+          pass("checkLogin");
+          ["uploadCard", "materialsCard", "titleCard", "contextCard"].forEach(show);
+          await refreshMaterials();
+        } catch (error) {
+          setStatus("loginStatus", `${error.message}${error.code ? `（${error.code}）` : ""}`, "error");
+        } finally { $("loginButton").disabled = false; }
+      }
+
+      function addFiles(items, files, inputId, declaredType) {
+        for (const file of $(inputId).files) {
+          const uploadIndex = files.length;
+          files.push(file);
+          items.push({ client_item_id: randomKey(declaredType), declared_type: declaredType, upload_index: uploadIndex, display_name: file.name });
+        }
+      }
+
+      async function upload() {
+        if (!state.course) return;
+        const items = [], files = [];
+        addFiles(items, files, "audioFiles", "audio");
+        addFiles(items, files, "textFiles", "text");
+        addFiles(items, files, "boardFiles", "board_image");
+        addFiles(items, files, "handwritingFiles", "handwriting_image");
+        const pasted = $("pastedText").value.trim();
+        if (pasted) items.push({ client_item_id: randomKey("paste"), declared_type: "text", text: pasted, display_name: "粘贴课堂文字.txt" });
+        if (!items.length) return setStatus("uploadStatus", "请先选择文件或粘贴文字。", "error");
+        const form = new FormData();
+        form.append("manifest", JSON.stringify({ items }));
+        files.forEach((file) => form.append("files", file));
+        $("uploadButton").disabled = true;
+        setStatus("uploadStatus", `正在上传 ${items.length} 份材料……`);
+        try {
+          const batch = await api(`/api/v1/courses/${state.course.id}/material-batches`, {
+            method: "POST", body: form, headers: { "Idempotency-Key": randomKey("stage1-upload") }
+          });
+          state.batchId = batch.id;
+          pass("checkUpload");
+          setStatus("uploadStatus", "上传完成，后端正在逐份解析。", "success");
+          await refreshMaterials();
+          beginPolling();
+        } catch (error) {
+          setStatus("uploadStatus", `${error.message}${error.code ? `（${error.code}）` : ""}`, "error");
+        } finally { $("uploadButton").disabled = false; }
+      }
+
+      function beginPolling() {
+        clearInterval(state.poller);
+        state.poller = setInterval(async () => {
+          try {
+            if (state.batchId) {
+              const batch = await api(`/api/v1/material-batches/${state.batchId}`);
+              setStatus("uploadStatus", `本批次：${statusNames[batch.status] || batch.status}；成功 ${batch.success_count}，失败 ${batch.failed_count}`,
+                batch.status === "failed" ? "error" : terminalBatch.has(batch.status) ? "success" : "");
+              if (terminalBatch.has(batch.status)) { clearInterval(state.poller); state.poller = null; }
+            }
+            await refreshMaterials();
+          } catch (_) { /* 下一轮继续，页面仍可手动刷新 */ }
+        }, 2200);
+      }
+
+      async function refreshMaterials() {
+        if (!state.course) return;
+        const result = await api(`/api/v1/courses/${state.course.id}/materials`);
+        state.materials = result.items;
+        renderMaterials();
+        const settled = state.materials.length && state.materials.every((item) => terminalMaterial.has(item.status));
+        pass("checkMaterial", settled);
+        if (state.materials.some((item) => item.status === "usable")) loadTitle(false);
+      }
+
+      function renderMaterials() {
+        $("materialsEmpty").classList.toggle("hidden", state.materials.length > 0);
+        $("materialList").innerHTML = state.materials.map((item) => `
+          <article class="material" data-material-id="${escapeHtml(item.id)}">
+            <div class="material-head"><div><h3 class="material-name">${escapeHtml(item.display_name)}</h3>
+              <p class="meta">${escapeHtml(item.declared_type)} · 版本 ${item.version}${item.error_code ? ` · ${escapeHtml(item.error_code)}` : ""}</p></div>
+              <span class="badge ${escapeHtml(item.status)}">${escapeHtml(statusNames[item.status] || item.status)}</span></div>
+            ${item.error_message ? `<p class="status-line error">${escapeHtml(item.error_message)}</p>` : ""}
+            <div class="button-row">
+              ${item.active_parse_version_id ? `<button class="button secondary" data-action="details">查看解析结果</button>` : ""}
+              ${item.status === "needs_review" || item.status === "partial" ? `<button class="button primary" data-action="accept">接受全部待确认内容</button>` : ""}
+              ${item.retryable ? `<button class="button secondary" data-action="retry">重试</button>` : ""}
+              ${!["deleting", "deleted"].includes(item.status) ? `<button class="button danger" data-action="delete">删除资料</button>` : ""}
+            </div><div class="details"></div>
+          </article>`).join("");
+      }
+
+      async function showDetails(materialId, article) {
+        const material = await api(`/api/v1/materials/${materialId}`);
+        const details = article.querySelector(".details");
+        if (details.classList.contains("open")) { details.classList.remove("open"); return; }
+        const version = await api(`/api/v1/materials/${materialId}/versions/${material.active_parse_version_id}`);
+        const media = material.declared_type === "audio"
+          ? `<audio class="media" controls src="/api/v1/materials/${materialId}/original"></audio>`
+          : ["board_image", "handwriting_image"].includes(material.declared_type)
+            ? `<img class="media" src="/api/v1/materials/${materialId}/original" alt="原图" />`
+            : `<a class="button secondary" href="/api/v1/materials/${materialId}/original" target="_blank">打开文本原件</a>`;
+        details.innerHTML = `${media}<div>${version.segments.map((segment) => `
+          <div class="segment"><p>${escapeHtml(segment.text)}</p><div class="meta">位置：${escapeHtml(segment.locator_type)}${segment.start_ms != null ? ` · ${segment.start_ms}–${segment.end_ms} ms` : ""}${segment.page_no ? ` · 第 ${segment.page_no} 页` : ""}</div>
+          ${segment.review_required && !segment.review_accepted ? `<div class="review">此处需要人工确认</div>` : ""}</div>`).join("")}</div>`;
+        details.classList.add("open");
+      }
+
+      async function acceptAll(materialId) {
+        const material = await api(`/api/v1/materials/${materialId}`);
+        const version = await api(`/api/v1/materials/${materialId}/versions/${material.active_parse_version_id}`);
+        const corrections = version.segments.filter((item) => item.review_required && !item.review_accepted)
+          .map((item) => ({ segment_id: item.id, action: "accept" }));
+        if (!corrections.length) return alert("当前没有需要确认的片段。");
+        await api(`/api/v1/materials/${materialId}/corrections`, {
+          method: "PATCH", headers: { "Idempotency-Key": randomKey("stage1-accept") },
+          body: JSON.stringify({ expected_version: material.version, corrections })
+        });
+        await refreshMaterials();
+      }
+
+      async function retryMaterial(materialId) {
+        const material = await api(`/api/v1/materials/${materialId}`);
+        await api(`/api/v1/materials/${materialId}/retry`, {
+          method: "POST", headers: { "Idempotency-Key": randomKey("stage1-retry") },
+          body: JSON.stringify({ expected_version: material.version })
+        });
+        await refreshMaterials(); beginPolling();
+      }
+
+      async function deleteMaterial(materialId) {
+        const material = await api(`/api/v1/materials/${materialId}`);
+        const preview = await api(`/api/v1/materials/${materialId}/deletion-preview`, {
+          method: "POST", body: JSON.stringify({ expected_version: material.version })
+        });
+        const snapshots = preview.impact.dependent_context_snapshots || 0;
+        if (!confirm(`确认删除“${material.display_name}”吗？\n它会立即不可读取，并影响 ${snapshots} 个上下文快照。`)) return;
+        await api(`/api/v1/materials/${materialId}`, {
+          method: "DELETE", body: JSON.stringify({ confirmation_id: preview.confirmation_id, expected_version: material.version })
+        });
+        await refreshMaterials(); beginPolling();
+      }
+
+      $("materialList").addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const article = button.closest(".material"), materialId = article.dataset.materialId;
+        button.disabled = true;
+        try {
+          if (button.dataset.action === "details") await showDetails(materialId, article);
+          if (button.dataset.action === "accept") await acceptAll(materialId);
+          if (button.dataset.action === "retry") await retryMaterial(materialId);
+          if (button.dataset.action === "delete") await deleteMaterial(materialId);
+        } catch (error) { alert(`${error.message}${error.code ? `（${error.code}）` : ""}`); }
+        finally { if (document.body.contains(button)) button.disabled = false; }
+      });
+
+      async function loadTitle(reportErrors = true) {
+        if (!state.course) return;
+        try {
+          const title = await api(`/api/v1/courses/${state.course.id}/title-candidate`);
+          state.course = await api(`/api/v1/courses/${state.course.id}`);
+          $("candidateList").innerHTML = title.candidates.map((item) => `
+            <div class="candidate"><div class="candidate-title">${escapeHtml(item.title)}</div>
+            <div class="meta">来源 ${item.source_ref_ids.length} 处 · 模型 ${escapeHtml(title.returned_model_id || title.requested_model_id)}</div>
+            <div class="button-row"><button class="button primary" data-candidate-id="${escapeHtml(item.id)}">确认这个名称</button></div></div>`).join("");
+          setStatus("titleStatus", title.status === "multiple_themes" ? "检测到多个主题，请选择一个候选。" : "名称候选已生成，尚未自动改名。", "success");
+        } catch (error) {
+          if (reportErrors || error.code !== "TITLE_SCOPE_EMPTY") setStatus("titleStatus", error.message, error.code === "TITLE_SCOPE_EMPTY" ? "" : "error");
+        }
+      }
+
+      $("candidateList").addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-candidate-id]"); if (!button) return;
+        button.disabled = true;
+        try {
+          state.course = await api(`/api/v1/courses/${state.course.id}`);
+          const confirmed = await api(`/api/v1/courses/${state.course.id}/title-confirmations`, {
+            method: "POST", headers: { "Idempotency-Key": randomKey("stage1-title") },
+            body: JSON.stringify({ candidate_id: button.dataset.candidateId, expected_course_version: state.course.version })
+          });
+          state.course = confirmed; pass("checkTitle");
+          setStatus("titleStatus", `已由你确认课程名称：${confirmed.title}`, "success");
+          $("candidateList").innerHTML = "";
+        } catch (error) { setStatus("titleStatus", error.message, "error"); }
+      });
+
+      async function createContext() {
+        await refreshMaterials();
+        const usable = state.materials.filter((item) => item.status === "usable");
+        if (!usable.length) return setStatus("contextStatus", "当前没有可用材料；请先完成解析或人工确认。", "error");
+        $("contextButton").disabled = true;
+        try {
+          const snapshot = await api(`/api/v1/courses/${state.course.id}/context-snapshots`, {
+            method: "POST", headers: { "Idempotency-Key": randomKey("stage1-context") },
+            body: JSON.stringify({ task_type: "stage1_validation", selected_materials: usable.map((item, index) => ({ id: item.id, parse_version: item.active_parse_version_id, selected_order: index })) })
+          });
+          const sources = await Promise.all(snapshot.source_ref_ids.map((id) => api(`/api/v1/source-refs/${id}`)));
+          $("sourceList").innerHTML = sources.map((source) => `<li><strong>${escapeHtml(source.display_name)}</strong><br><span class="meta">${escapeHtml(source.locator_type)} · ${escapeHtml(source.text.slice(0, 80))}</span></li>`).join("");
+          setStatus("contextStatus", `快照创建成功：${snapshot.coverage_status}，共 ${snapshot.segment_count} 个来源片段。`, "success");
+          pass("checkContext", sources.length > 0);
+        } catch (error) { setStatus("contextStatus", `${error.message}${error.code ? `（${error.code}）` : ""}`, "error"); }
+        finally { $("contextButton").disabled = false; }
+      }
+
+      $("loginButton").addEventListener("click", login);
+      $("inviteCode").addEventListener("keydown", (event) => { if (event.key === "Enter") login(); });
+      $("uploadButton").addEventListener("click", upload);
+      $("refreshButton").addEventListener("click", refreshMaterials);
+      $("loadTitleButton").addEventListener("click", () => loadTitle(true));
+      $("contextButton").addEventListener("click", createContext);
+      checkHealth();
+    </script>
+  </body>
+</html>

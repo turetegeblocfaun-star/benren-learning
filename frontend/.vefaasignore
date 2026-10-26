@@ -1,0 +1,13 @@
+# Exclude the source dependency tree. Before cloud packaging, the standalone
+# dependency directory is renamed to runtime-deps because veFaaS filters
+# directories named node_modules recursively.
+/node_modules/
+.next/cache/
+.env*
+.git/
+.vefaas/
+coverage/
+tests/
+e2e/
+playwright-report/
+test-results/

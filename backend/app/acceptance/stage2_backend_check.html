@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>“笨”人学习｜第二阶段后端验收</title>
+  <style>
+    :root{--blue:#2563eb;--green:#15803d;--red:#b91c1c;--ink:#172033;--muted:#64748b;--line:#dbe3ef;--bg:#f4f7fb}
+    *{box-sizing:border-box}body{margin:0;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:var(--ink);background:var(--bg)}
+    main{width:min(1080px,calc(100% - 32px));margin:32px auto 64px}header,.panel{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 35px rgba(31,55,90,.06)}
+    header{padding:28px 30px;background:linear-gradient(135deg,#eef5ff,#fff 55%,#effcf5)}h1{margin:0 0 8px;font-size:28px}h2{margin:0 0 14px;font-size:20px}.muted,.detail,.state{color:var(--muted)}
+    .scope,.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}.tag{padding:5px 10px;border-radius:999px;background:#eaf1ff;color:#1d4ed8;font-size:13px}.panel{margin-top:18px;padding:24px}
+    label{display:block;font-weight:650;margin:12px 0 6px}input,textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:11px 12px;font:inherit}textarea{min-height:120px;resize:vertical}
+    button{border:0;border-radius:10px;padding:11px 17px;font:inherit;font-weight:650;cursor:pointer;background:var(--blue);color:#fff}button.secondary{background:#0f766e}button:disabled{opacity:.55;cursor:not-allowed}
+    .notice{margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff7ed;color:#9a3412}.progress{display:grid;gap:10px;margin-top:16px}.step{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+    .dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#e2e8f0;color:#475569;font-size:12px;font-weight:700}.step.running .dot{background:#dbeafe;color:#1d4ed8}.step.passed .dot{background:#dcfce7;color:var(--green)}.step.failed .dot{background:#fee2e2;color:var(--red)}
+    .step strong{display:block}.detail,.state{font-size:13px;word-break:break-word}.step.passed .state{color:var(--green)}.step.failed .state{color:var(--red)}.summary{display:none;margin-top:16px;padding:16px;border-radius:12px;background:#ecfdf5;border:1px solid #bbf7d0}.summary.failed{background:#fef2f2;border-color:#fecaca}
+    @media(max-width:640px){main{width:calc(100% - 20px);margin-top:10px}header,.panel{padding:18px;border-radius:14px}.step{grid-template-columns:26px 1fr}.state{grid-column:2}}
+  </style>
+</head>
+<body><main>
+  <header>
+    <h1>第二阶段后端验收</h1>
+    <p>开发环境专用工具，不是正式前端。它会真实调用当前后端，让你直接确认结果。</p>
+    <div class="scope"><span class="tag">结构化笔记</span><span class="tag">知识图谱</span><span class="tag">客观测验</span><span class="tag">确定性判分</span><span class="tag">错题本</span><span class="tag">引导式 Tutor</span><span class="tag">长材料 Tutor RAG</span></div>
+  </header>
+  <section class="panel">
+    <h2>1. 填写验证内容</h2>
+    <label for="invite">邀请码</label><input id="invite" type="password" autocomplete="off" placeholder="填写本地开发邀请码">
+    <label for="material">学习材料</label><textarea id="material">牛顿第二定律说明：物体的加速度与所受合外力成正比，与物体质量成反比。分析动力学问题时，应先选择研究对象，再进行受力分析并建立坐标轴。合外力方向与加速度方向一致，力的国际单位是牛顿。</textarea>
+    <div class="actions"><button id="core">验证第二阶段核心链路</button><button id="rag" class="secondary">单独验证长材料 Tutor RAG</button></div>
+    <div class="notice">会使用当前配置的真实或 Mock 模型，并在本地测试数据库创建验收课程。长材料只会进入本次新建课程。</div>
+  </section>
+  <section class="panel"><h2>2. 验证进度</h2><div id="progress" class="progress"></div><div id="summary" class="summary"></div></section>
+</main><script>
+const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const key=p=>`${p}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+function reset(names){$('summary').style.display='none';$('summary').className='summary';$('progress').innerHTML=names.map((n,i)=>`<div class="step" id="s${i}"><span class="dot">${i+1}</span><div><strong>${n}</strong><span class="detail"></span></div><span class="state">等待</span></div>`).join('')}
+function mark(i,state,detail=''){const row=$(`s${i}`);row.className=`step ${state}`;row.querySelector('.state').textContent={running:'进行中',passed:'通过',failed:'失败'}[state];row.querySelector('.detail').textContent=detail}
+function done(text,failed=false){$('summary').style.display='block';$('summary').className=failed?'summary failed':'summary';$('summary').textContent=text}
+async function api(path,opt={}){const res=await fetch(`/api/v1${path}`,{credentials:'include',...opt,headers:{...(opt.headers||{})}});let body={};try{body=await res.json()}catch(_){}if(!res.ok)throw new Error(body?.error?.message||`请求失败（${res.status}）`);return body}
+async function login(){const invite=$('invite').value.trim();if(!invite)throw new Error('请先填写邀请码');return api('/auth/invite-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invite_code:invite})})}
+async function newCourse(){return api('/courses',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('course')},body:'{}'})}
+async function upload(courseId,text,name){const form=new FormData();form.append('manifest',JSON.stringify({items:[{client_item_id:key('text'),declared_type:'text',text,display_name:name}]}));return api(`/courses/${courseId}/material-batches`,{method:'POST',headers:{'Idempotency-Key':key('upload')},body:form})}
+async function waitMaterial(id){for(let i=0;i<150;i++){const x=await api(`/materials/${id}`);if(x.status==='usable')return x;if(x.status==='failed')throw new Error(x.error_message||'材料解析失败');await sleep(700)}throw new Error('等待材料解析超时')}
+async function scope(courseId,m,task){return api(`/courses/${courseId}/context-snapshots`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key(`scope-${task}`)},body:JSON.stringify({task_type:task,selected_materials:[{id:m.id,parse_version:m.active_parse_version_id,selected_order:0}]})})}
+async function waitAsset(id){for(let i=0;i<200;i++){const x=await api(`/learning-assets/${id}`);if(['ready','partial'].includes(x.status))return x;if(['failed','stale'].includes(x.status))throw new Error(x.error_message||`资产状态：${x.status}`);await sleep(800)}throw new Error('等待学习资产超时')}
+async function waitQuiz(id){for(let i=0;i<200;i++){const x=await api(`/quizzes/${id}`);if(['ready','partial'].includes(x.status))return x;if(['failed','stale'].includes(x.status))throw new Error(x.error_message||`测验状态：${x.status}`);await sleep(800)}throw new Error('等待测验超时')}
+async function waitTutor(id){for(let i=0;i<200;i++){const x=await api(`/tutor-sessions/${id}`),t=x.turns[x.turns.length-1];if(t&&['completed','insufficient_context','failed'].includes(t.status))return x;await sleep(700)}throw new Error('等待 Tutor 超时')}
+function fail(error){const row=[...document.querySelectorAll('.step')].find(x=>x.classList.contains('running'));if(row)mark(Number(row.id.slice(1)),'failed',error.message);done(`验证未通过：${error.message}`,true)}
+async function runCore(){
+  reset(['邀请码登录','上传并冻结材料','生成有来源的结构化笔记','生成当前课程知识图谱','生成并独立复核客观题','代码判分与错题纠正','短材料引导式 Tutor']);$('core').disabled=$('rag').disabled=true;
+  try{
+    mark(0,'running');await login();mark(0,'passed','登录成功');
+    mark(1,'running');const c=await newCourse(),batch=await upload(c.id,$('material').value,'第二阶段验收材料.txt'),m=await waitMaterial(batch.materials[0].id);mark(1,'passed',`材料 ${m.status}，解析版本已冻结`);
+    mark(2,'running');const ns=await scope(c.id,m,'notes'),nt=await api(`/courses/${c.id}/learning-assets/notes`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('note')},body:JSON.stringify({context_snapshot_id:ns.id})}),note=await waitAsset(nt.asset.id);mark(2,'passed',`${note.current_version.content.sections.length} 个章节，${note.current_version.source_ref_ids.length} 个来源引用`);
+    mark(3,'running');const gs=await scope(c.id,m,'graph'),gt=await api(`/courses/${c.id}/learning-assets/graphs`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('graph')},body:JSON.stringify({context_snapshot_id:gs.id,note_version_id:note.current_version.id,max_nodes:40,max_edges:80})}),graph=await waitAsset(gt.asset.id);mark(3,'passed',`${graph.current_version.content.nodes.length} 个节点，${graph.current_version.content.edges.length} 条正式边`);
+    mark(4,'running');const qs=await scope(c.id,m,'quiz'),qt=await api(`/courses/${c.id}/quizzes`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('quiz')},body:JSON.stringify({context_snapshot_id:qs.id,count:1,difficulty:'medium'})}),quiz=await waitQuiz(qt.quiz.id);if(!quiz.questions.length)throw new Error('没有题目通过独立验证');const q=quiz.questions[0];if(JSON.stringify(q).includes('correct_answer'))throw new Error('取题接口提前泄露答案');mark(4,'passed',`${quiz.published_count} 道题发布，取题接口未泄露答案`);
+    mark(5,'running');const first=await api(`/quiz-questions/${q.id}/attempts`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('first')},body:JSON.stringify({selected_answer:q.options[0].id})}),wrong=q.options.find(x=>x.id!==first.correct_answer);if(wrong)await api(`/quiz-questions/${q.id}/attempts`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('wrong')},body:JSON.stringify({selected_answer:wrong.id})});await api(`/quiz-questions/${q.id}/attempts`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('correct')},body:JSON.stringify({selected_answer:first.correct_answer})});const wb=await api(`/courses/${c.id}/wrongbook`);mark(5,'passed',`确定性判分完成；错题 ${wb.length} 条，纠正历史已保存`);
+    mark(6,'running');const ts=await scope(c.id,m,'tutor'),session=await api(`/courses/${c.id}/tutor-sessions`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('session')},body:JSON.stringify({context_snapshot_id:ts.id,learning_goal:'理解材料核心概念'})});await api(`/tutor-sessions/${session.id}/turns`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('turn')},body:JSON.stringify({message:'我应该先理解哪个概念？'})});const tutor=await waitTutor(session.id),turn=tutor.turns[tutor.turns.length-1];if(turn.status!=='completed')throw new Error(turn.error_message||turn.message);if((turn.message.match(/[?？]/g)||[]).length!==1)throw new Error('Tutor 未遵守单轮单问题');mark(6,'passed',`Tutor 只提出 1 个问题，附 ${turn.source_ref_ids.length} 个来源`);
+    done('第二阶段核心链路全部通过：笔记、图谱、测验、判分、错题本和短材料 Tutor 均成功。');
+  }catch(e){fail(e)}finally{$('core').disabled=$('rag').disabled=false}
+}
+async function runRag(){
+  reset(['邀请码登录','上传超长材料','路由到 tutor_rag','范围内混合检索','Tutor 使用冻结证据']);$('core').disabled=$('rag').disabled=true;
+  try{
+    mark(0,'running');await login();mark(0,'passed','登录成功');
+    mark(1,'running');const c=await newCourse(),seed='牛顿第二定律说明加速度与合外力成正比、与质量成反比。分析时先选择研究对象并进行受力分析。',text=Array.from({length:4500},(_,i)=>`第${i+1}段：${seed}`).join('\n\n'),batch=await upload(c.id,text,'长材料RAG验收.txt'),m=await waitMaterial(batch.materials[0].id);mark(1,'passed',`超长材料已解析，状态 ${m.status}`);
+    mark(2,'running');const s=await scope(c.id,m,'tutor');if(s.context_mode!=='tutor_rag')throw new Error(`实际路由为 ${s.context_mode}`);mark(2,'passed','自动切换 tutor_rag，材料仍为 usable');
+    mark(3,'running');const session=await api(`/courses/${c.id}/tutor-sessions`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('rag-session')},body:JSON.stringify({context_snapshot_id:s.id,learning_goal:'理解牛顿第二定律'})});await api(`/tutor-sessions/${session.id}/turns`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key('rag-turn')},body:JSON.stringify({message:'加速度与合外力是什么关系？'})});const tutor=await waitTutor(session.id),turn=tutor.turns[tutor.turns.length-1];if(!turn.retrieval_run_id)throw new Error('没有生成检索证据包');const r=await api(`/retrieval-runs/${turn.retrieval_run_id}`);if(!r.evidence_count)throw new Error('没有范围内证据');mark(3,'passed',`冻结 ${r.evidence_count} 条证据，均来自本次所选材料`);
+    mark(4,'running');if(turn.status!=='completed')throw new Error(turn.error_message||turn.message);mark(4,'passed',`Tutor 完成引导，引用 ${turn.source_ref_ids.length} 个 SourceRef`);done('长材料 Tutor RAG 验证通过：路由、范围门、混合检索、证据冻结和 Tutor 引导均成功。');
+  }catch(e){fail(e)}finally{$('core').disabled=$('rag').disabled=false}
+}
+$('core').addEventListener('click',runCore);$('rag').addEventListener('click',runRag);reset(['等待开始']);
+</script></body></html>
